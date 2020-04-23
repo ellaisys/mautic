@@ -276,6 +276,10 @@ class LeadController extends FormController
         /** @var \Mautic\LeadBundle\Model\LeadModel $model */
         $model = $this->getModel('lead.lead');
 
+        // When we change company data these changes get cached
+        // so we need to clear the entity manager
+        $model->getRepository()->clear();
+
         /** @var \Mautic\LeadBundle\Entity\Lead $lead */
         $lead = $model->getEntity($objectId);
 
@@ -734,9 +738,9 @@ class LeadController extends FormController
      */
     private function uploadAvatar(Lead $lead)
     {
-        $lead      = $this->request->files->get('lead', []);
-        $file      = $lead['custom_avatar'] ?? null;
-        $avatarDir = $this->get('mautic.helper.template.avatar')->getAvatarPath(true);
+        $leadInformation = $this->request->files->get('lead', []);
+        $file            = $leadInformation['custom_avatar'] ?? null;
+        $avatarDir       = $this->get('mautic.helper.template.avatar')->getAvatarPath(true);
 
         if (!file_exists($avatarDir)) {
             mkdir($avatarDir);
@@ -1517,13 +1521,13 @@ class LeadController extends FormController
 
                 if (!empty($add)) {
                     foreach ($add as $cid) {
-                        $membershipManager->addContacts(new ArrayCollection($entities), $campaigns[$cid], true);
+                        $membershipManager->addContacts(new ArrayCollection($entities), $campaigns[$cid]);
                     }
                 }
 
                 if (!empty($remove)) {
                     foreach ($remove as $cid) {
-                        $membershipManager->removeContacts(new ArrayCollection($entities), $campaigns[$cid], true);
+                        $membershipManager->removeContacts(new ArrayCollection($entities), $campaigns[$cid]);
                     }
                 }
             }
@@ -1592,6 +1596,10 @@ class LeadController extends FormController
         if ('POST' == $this->request->getMethod()) {
             /** @var \Mautic\LeadBundle\Model\LeadModel $model */
             $model = $this->getModel('lead');
+
+            /** @var \Mautic\LeadBundle\Model\DoNotContact $doNotContact */
+            $doNotContact = $this->get('mautic.lead.model.dnc');
+
             $data  = $this->request->request->get('lead_batch_dnc', [], true);
             $ids   = json_decode($data['ids'], true);
 
@@ -1617,7 +1625,7 @@ class LeadController extends FormController
                 $persistEntities = [];
                 foreach ($entities as $lead) {
                     if ($this->get('mautic.security')->hasEntityAccess('lead:leads:editown', 'lead:leads:editother', $lead->getPermissionUser())) {
-                        if ($model->addDncForLead($lead, 'email', $data['reason'], DoNotContact::MANUAL)) {
+                        if ($doNotContact->addDncForContact($lead->getLead(), 'email', $data['reason'], DoNotContact::MANUAL)) {
                             $persistEntities[] = $lead;
                         }
                     }

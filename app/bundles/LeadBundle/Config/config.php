@@ -513,6 +513,12 @@ return [
                     'mautic.core.model.auditlog',
                 ],
             ],
+            'mautic.lead.subscriber.donotcontact' => [
+                'class'     => \Mautic\LeadBundle\EventListener\DoNotContactSubscriber::class,
+                'arguments' => [
+                    'mautic.lead.model.dnc',
+                ],
+            ],
         ],
         'forms' => [
             'mautic.form.type.lead' => [
@@ -933,8 +939,18 @@ return [
                 'arguments' => [
                     'templating.helper.assets',
                     'mautic.helper.paths',
+                    'mautic.helper.template.gravatar',
+                    'mautic.helper.template.default_avatar',
                 ],
                 'alias'     => 'lead_avatar',
+            ],
+            'mautic.helper.template.default_avatar' => [
+                'class'     => Mautic\LeadBundle\Templating\Helper\DefaultAvatarHelper::class,
+                'arguments' => [
+                    'mautic.helper.paths',
+                    'templating.helper.assets',
+                ],
+                'alias'     => 'default_avatar',
             ],
             'mautic.helper.field.alias' => [
                 'class'     => \Mautic\LeadBundle\Helper\FieldAliasHelper::class,

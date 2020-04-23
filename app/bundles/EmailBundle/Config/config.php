@@ -298,7 +298,6 @@ return [
                 'arguments' => [
                     'translator',
                     'doctrine.orm.entity_manager',
-                    'request_stack',
                     'mautic.stage.model.stage',
                 ],
             ],
@@ -614,6 +613,7 @@ return [
                     'mautic.lead.model.lead',
                     'translator',
                     'monolog.logger.mautic',
+                    'mautic.lead.model.dnc',
                 ],
             ],
             'mautic.message.processor.unsubscribe' => [
@@ -621,18 +621,18 @@ return [
                 'arguments' => [
                     'swiftmailer.transport.real',
                     'mautic.message.search.contact',
-                    'mautic.lead.model.lead',
                     'translator',
                     'monolog.logger.mautic',
+                    'mautic.lead.model.dnc',
                 ],
             ],
             'mautic.message.processor.feedbackloop' => [
                 'class'     => \Mautic\EmailBundle\MonitoredEmail\Processor\FeedbackLoop::class,
                 'arguments' => [
                     'mautic.message.search.contact',
-                    'mautic.lead.model.lead',
                     'translator',
                     'monolog.logger.mautic',
+                    'mautic.lead.model.dnc',
                 ],
             ],
             'mautic.message.processor.replier' => [
@@ -643,6 +643,7 @@ return [
                     'mautic.lead.model.lead',
                     'event_dispatcher',
                     'monolog.logger.mautic',
+                    'mautic.tracker.contact',
                 ],
             ],
             'mautic.helper.mailer' => [
@@ -700,6 +701,8 @@ return [
                     'mautic.tracker.device',
                     'mautic.page.repository.redirect',
                     'mautic.helper.cache_storage',
+                    'mautic.tracker.contact',
+                    'mautic.lead.model.dnc',
                 ],
             ],
             'mautic.email.model.send_email_to_user' => [
@@ -850,7 +853,7 @@ return [
         'mailer_is_owner'                     => false,
         'default_signature_text'              => null,
         'email_frequency_number'              => 0,
-        'email_frequency_time'                => 0,
+        'email_frequency_time'                => 'DAY',
         'show_contact_preferences'            => false,
         'show_contact_frequency'              => false,
         'show_contact_pause_dates'            => false,

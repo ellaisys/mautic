@@ -50,7 +50,8 @@ class BuildJsSubscriber implements EventSubscriberInterface
     {
         return [
             CoreEvents::BUILD_MAUTIC_JS => [
-                ['onBuildJs', 255],
+                // onBuildJs must always needs to be last to ensure setup before delivering the event
+                ['onBuildJs', -255],
                 ['onBuildJsForVideo', 256],
                 ['onBuildJsForTrackingEvent', 256],
             ],
@@ -198,7 +199,9 @@ class BuildJsSubscriber implements EventSubscriberInterface
 
     // Process pageviews after new are added
     document.addEventListener('eventAddedToMauticQueue', function(e) {
-        m.sendPageview(e.detail);
+      if (MauticJS.ensureEventContext(e, 'send', 'pageview')) {
+          m.sendPageview(e.detail);
+      }
     });
 })(MauticJS, location, navigator, document);
 JS;

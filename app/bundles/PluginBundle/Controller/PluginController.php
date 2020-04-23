@@ -151,7 +151,9 @@ class PluginController extends FormController
         }
 
         $session   = $this->get('session');
-        $authorize = $this->request->request->get('integration_details[in_auth]', false, true);
+
+        $integrationDetailsPost = $this->request->request->get('integration_details', [], true);
+        $authorize              = empty($integrationDetailsPost['in_auth']) ? false : true;
 
         /** @var \Mautic\PluginBundle\Helper\IntegrationHelper $integrationHelper */
         $integrationHelper = $this->factory->getHelper('integration');
@@ -201,16 +203,6 @@ class PluginController extends FormController
                 if ($authorize || $valid) {
                     $em          = $this->get('doctrine.orm.entity_manager');
                     $integration = $entity->getName();
-                    $keys        = $form['apiKeys']->getData();
-
-                    // Prevent merged keys
-                    $secretKeys = $integrationObject->getSecretKeys();
-                    foreach ($secretKeys as $secretKey) {
-                        if (empty($keys[$secretKey]) && !empty($currentKeys[$secretKey])) {
-                            $keys[$secretKey] = $currentKeys[$secretKey];
-                        }
-                    }
-                    $integrationObject->encryptAndSetApiKeys($keys, $entity);
 
                     if (!$authorize) {
                         $features = $entity->getSupportedFeatures();
@@ -251,6 +243,17 @@ class PluginController extends FormController
                             }
                         }
                     } else {
+                        $keys = $form['apiKeys']->getData();
+
+                        // Prevent merged keys
+                        $secretKeys = $integrationObject->getSecretKeys();
+                        foreach ($secretKeys as $secretKey) {
+                            if (empty($keys[$secretKey]) && !empty($currentKeys[$secretKey])) {
+                                $keys[$secretKey] = $currentKeys[$secretKey];
+                            }
+                        }
+                        $integrationObject->encryptAndSetApiKeys($keys, $entity);
+
                         //make sure they aren't overwritten because of API connection issues
                         $entity->setFeatureSettings($currentFeatureSettings);
                     }

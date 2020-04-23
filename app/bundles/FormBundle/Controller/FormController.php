@@ -227,7 +227,7 @@ class FormController extends CommonFormController
 
         $activeFormFields = [];
         $fieldHelper      = $this->get('mautic.helper.form.field_helper');
-        $availableFields  = $fieldHelper->getChoiceList($customComponents['fields']);
+        $availableFields  = array_flip($fieldHelper->getChoiceList($customComponents['fields']));
         foreach ($activeForm->getFields() as $field) {
             if (!isset($availableFields[$field->getType()])) {
                 continue;
@@ -1081,7 +1081,8 @@ class FormController extends CommonFormController
 
             // Loop over the IDs to perform access checks pre-delete
             foreach ($ids as $objectId) {
-                $entity = $model->getEntity($objectId);
+                $objectId = (int) $objectId;
+                $entity   = $model->getEntity($objectId);
 
                 if (null === $entity) {
                     $flashes[] = [

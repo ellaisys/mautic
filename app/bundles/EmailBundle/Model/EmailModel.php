@@ -43,7 +43,9 @@ use Mautic\EmailBundle\MonitoredEmail\Mailbox;
 use Mautic\LeadBundle\Entity\DoNotContact;
 use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Model\CompanyModel;
+use Mautic\LeadBundle\Model\DoNotContact as DNC;
 use Mautic\LeadBundle\Model\LeadModel;
+use Mautic\LeadBundle\Tracker\ContactTracker;
 use Mautic\LeadBundle\Tracker\DeviceTracker;
 use Mautic\PageBundle\Entity\RedirectRepository;
 use Mautic\PageBundle\Model\TrackableModel;
@@ -139,6 +141,16 @@ class EmailModel extends FormModel implements AjaxLookupModelInterface
     private $cacheStorageHelper;
 
     /**
+     * @var ContactTracker
+     */
+    private $contactTracker;
+
+    /**
+     * @var DNC
+     */
+    private $doNotContact;
+
+    /**
      * EmailModel constructor.
      */
     public function __construct(
@@ -154,7 +166,9 @@ class EmailModel extends FormModel implements AjaxLookupModelInterface
         SendEmailToContact $sendModel,
         DeviceTracker $deviceTracker,
         RedirectRepository $redirectRepository,
-        CacheStorageHelper $cacheStorageHelper
+        CacheStorageHelper $cacheStorageHelper,
+        ContactTracker $contactTracker,
+        DNC $doNotContact
     ) {
         $this->ipLookupHelper        = $ipLookupHelper;
         $this->themeHelper           = $themeHelper;
@@ -169,6 +183,8 @@ class EmailModel extends FormModel implements AjaxLookupModelInterface
         $this->deviceTracker         = $deviceTracker;
         $this->redirectRepository    = $redirectRepository;
         $this->cacheStorageHelper    = $cacheStorageHelper;
+        $this->contactTracker        = $contactTracker;
+        $this->doNotContact          = $doNotContact;
     }
 
     /**
@@ -480,9 +496,9 @@ class EmailModel extends FormModel implements AjaxLookupModelInterface
         if (null !== $lead) {
             // Set the lead as current lead
             if ($activeRequest) {
-                $this->leadModel->setCurrentLead($lead);
+                $this->contactTracker->setTrackedContact($lead);
             } else {
-                $this->leadModel->setSystemCurrentLead($lead);
+                $this->contactTracker->setSystemContact($lead);
             }
         }
 
@@ -1029,6 +1045,7 @@ class EmailModel extends FormModel implements AjaxLookupModelInterface
             'allowResends'  => false,
             'customHeaders' => [
                 'Precedence' => 'Bulk',
+                'X-EMAIL-ID' => $email->getId(),
             ],
         ];
 
@@ -1663,7 +1680,7 @@ class EmailModel extends FormModel implements AjaxLookupModelInterface
             $email   = $stat->getEmail();
             $channel = ($email) ? ['email' => $email->getId()] : 'email';
 
-            return $this->leadModel->addDncForLead($lead, $channel, $comments, $reason, $flush);
+            return $this->doNotContact->addDncForContact($lead->getId(), $channel, $comments, $reason, $flush);
         }
 
         return false;
@@ -1688,7 +1705,7 @@ class EmailModel extends FormModel implements AjaxLookupModelInterface
         }
 
         foreach ($leads as $lead) {
-            $this->leadModel->removeDncForLead($lead, 'email');
+            $this->doNotContact->removeDncForContact($lead->getId(), 'email');
         }
     }
 
@@ -1714,7 +1731,7 @@ class EmailModel extends FormModel implements AjaxLookupModelInterface
 
         $dnc = [];
         foreach ($leadId as $lead) {
-            $dnc[] = $this->leadModel->addDncForLead(
+            $dnc[] = $this->doNotContact->addDncForContact(
                 $this->em->getReference('MauticLeadBundle:Lead', $lead),
                 'email',
                 $comments,
